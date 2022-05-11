@@ -284,22 +284,26 @@ class ARG(commands.Cog, name="ARG"):
         name="time", description="Posts how much time is left until the next tweet."
     )
     async def time(self, interaction=Interaction):
-        todays_date = datetime.datetime.now()
-        todays_tweet_post_date = todays_date.replace(hour=23, minute=00)
-        tomorrows_tweet_post_date = todays_tweet_post_date + datetime.timedelta(days=1)
-        first_tweet_date = datetime.datetime(self.first_tweet_date[0],self.first_tweet_date[1],self.first_tweet_date[2])
 
-        if todays_date.time() < datetime.time(23,00):
-            unix_timestamp = datetime.datetime.timestamp(todays_tweet_post_date)
-        else:
-            unix_timestamp = datetime.datetime.timestamp(tomorrows_tweet_post_date)
+        first_tweet_date = datetime.datetime(
+            self.first_tweet_date[0],
+            self.first_tweet_date[1],
+            self.first_tweet_date[2],
+            self.first_tweet_date[3],
+            self.first_tweet_date[4],
+            self.first_tweet_date[5], 
+            tzinfo=datetime.timezone.utc)
+        todays_date = datetime.datetime.now(datetime.timezone.utc)
 
-        if (todays_date - first_tweet_date).days % 2 == 0:
-            if(todays_date.time() < datetime.time(23,00)):
-                tweet_sender = self.pair_names[0]
-            else: tweet_sender = self.pair_names[1]
-        else: tweet_sender = self.pair_names[1]
-        await interaction.response.send_message("Next tweet will happen <t:{}:R> and it'll be tweeted by {}.".format(str(unix_timestamp)[:10],tweet_sender), ephemeral=self.is_not_in_whitelist(interaction.channel_id))
+        current_offset_from_tweet_time = todays_date - todays_date.replace(hour=2, minute=0, second=0, microsecond=0)
+        time_until_next_tweet = datetime.timedelta(days=1) - current_offset_from_tweet_time
+        datetime_of_next_tweet = todays_date + time_until_next_tweet
+        unix_timestamp = datetime.datetime.timestamp(datetime_of_next_tweet)
+
+        time_since_first_tweet = todays_date - first_tweet_date
+        next_tweet_sender = self.pair_names[(time_since_first_tweet.days + 1) % 2]
+
+        await interaction.response.send_message("Next tweet will happen <t:{}:R> and it'll be tweeted by {}.".format(str(unix_timestamp)[:10], next_tweet_sender), ephemeral=self.is_not_in_whitelist(interaction.channel_id))
 
 
 
